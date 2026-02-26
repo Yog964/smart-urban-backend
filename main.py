@@ -110,14 +110,16 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/upload/", response_model=dict)
 async def upload_file(file: UploadFile = File(...)):
-    import uuid
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_location = f"{UPLOAD_DIR}/{unique_filename}"
-    with open(file_location, "wb+") as file_object:
-        file_object.write(file.file.read())
-    # Return as path so frontend logic doesn't break
-    return {"image_url": file_location}
+    import base64
+    content = await file.read()
+    content_type = file.content_type
+    if not content_type:
+        content_type = "application/octet-stream"
+    
+    encoded = base64.b64encode(content).decode('utf-8')
+    data_uri = f"data:{content_type};base64,{encoded}"
+    
+    return {"image_url": data_uri}
 
 
 @app.post("/complaints/", response_model=schemas.ComplaintAIResponse)
